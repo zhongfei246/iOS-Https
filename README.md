@@ -1,4 +1,4 @@
-# iOS-Https适配
+# iOS-Https适配（AFN、NSURLSession）
 
 
   代码中写了两种方式适配https，一种是使用NSURLSession实现https的适配，一种是使用AFNNetworking，过程详细有注释。如果有帮助请点个star，谢谢！
