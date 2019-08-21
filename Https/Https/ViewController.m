@@ -12,7 +12,7 @@
 /**
     注：第一：https有效
           第二：cer有效
-          第三：如果贵公司的测试环境也是https的，就可以直接把NSAppTransportSecurity即ATS配置的根节点中的NSAllowsAritraryLoads删掉了，如果测试环境是http的，那测试时就不用校验https，加上ATS配置NSAllowsAritraryLoads为YES即可，但是上线（App Store）的时候需要去掉，苹果把https延期了，据说如果实行的话适配了https但是ATS的NSAllowsAritraryLoads仍为YES的话会被拒。
+          第三：如果贵公司的测试环境也是https的或者公司没有http请求，，就可以直接把NSAppTransportSecurity即ATS配置的根节点中的NSAllowsAritraryLoads删掉了，如果测试环境是http的，那测试时就不用校验https，加上ATS配置NSAllowsAritraryLoads为YES即可，但是上线（App Store）的时候需要去掉，苹果把https延期了，据说如果实行的话适配了https但是ATS的NSAllowsAritraryLoads仍为YES的话会被拒。
  */
 
 
@@ -137,6 +137,20 @@
 }
 #pragma mark ---------------------------------
 #pragma mark afn的https处理方法
+/**
+ AFSSLPinningModeNon表示不做SSL pinning，只跟浏览器一样在系统的信任机构列表里验证服务端返回的证书。若证书是信任机构签发的就会通过，若是自己服务器生成的证书，是不会通过的。
+ 
+ AFSSLPinningModeCertificate表示用证书绑定方式验证证书，需要客户端保存有服务端的证书拷贝，这里验证分两步，第一步验证证书的域名/有效期等信息，第二步是对比服务端返回的证书跟客户端返回的是否一致。
+ 
+ AFSSLPinningModePublicKey是用证书绑定方式验证，客户端要有服务端的证书拷贝，只是验证时只验证证书里的公钥，不验证证书的有效期等信息。只要公钥是正确的，就能保证通信不会被窃听，因为中间人没有私钥，无法解开通过公钥加密的数据。
+ 
+ 如果你使用后面两种模式你的工程里面需要导入cer证书文件。这个文件的路径随意，AFNetWorking会自动替你寻找。也可以自己直接指定文件。
+ （  NSData *certData = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"12306"ofType:@"cer"]];
+    NSSet *cerSet  = [NSSet setWithObject:certData];
+    if(certData) {
+        [securityPolicy setPinnedCertificates:cerSet];
+    } ）
+*/
 -(void)adaptationMode2
 {
     AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
@@ -154,12 +168,12 @@
 //    securityPolicy.validatesDomainName = NO;
     
     
-    //第二种：可以使用公司运维给的证书文件转成cer格式拉到项目中，在这个地方校验
+    //第二种：可以使用公司运维给的证书文件转成cer格式拉到项目中，在这个地方校验（也可以不使用cer：AFSSLPinningModeNone）
     // /先导入证书
     NSString *cerPath = [[NSBundle mainBundle] pathForResource:@"工程里的cer文件名" ofType:@"cer"];//证书的路径
     NSData *certData = [NSData dataWithContentsOfFile:cerPath];
     
-    // AFSSLPinningModeCertificate 使用证书验证模式
+    // AFSSLPinningModeCertificate 使用证书验证模式(AFSSLPinningModeNone 使用这种方式的话就不需要在xcode中导入cer证书了，这种方式不做证书有效期域名等验证)
     AFSecurityPolicy *securityPolicy = [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeCertificate];
     
     // allowInvalidCertificates 是否允许无效证书（也就是自建的证书），默认为NO
